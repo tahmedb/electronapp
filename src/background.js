@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain ,shell} from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -30,21 +30,59 @@ async function createWindow() {
     webPreferences: {
       nodeIntegrationInWorker: true,
       nodeIntegration: true,
-      contextIsolation: false,
+      conheaderIsolation: false,
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       //nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
     }
   })
   win.setMenuBarVisibility(false);
+  ipcMain.on('bringProducts', (event, arg) => {
+    db.getAll("products", (succ, data) => {
+      event.reply('getProducts', data)
+    });
+  })
+
+  ipcMain.on('saveProducts', (event, arg) => {
+    db.insertTableContent("products", arg, (succ, msg) => {
+      if (succ) {
+        db.getAll("products", (succ, data) => {
+          event.reply('getProducts', data)
+        });
+      }
+      event.returnValue = true;
+    });
+  })
+  ipcMain.on('bringCategories', (event, arg) => {
+    db.getAll("categories", (succ, data) => {
+      event.reply('getCategories', data)
+    });
+  })
+
+  ipcMain.on('saveCategory', (event, arg) => {
+    db.insertTableContent("categories", arg, (succ, msg) => {
+      if (succ) {
+        db.getAll("categories", (succ, data) => {
+          event.reply('getCategories', data)
+        });
+      }
+      event.returnValue = true;
+    });
+  })
+
+  ipcMain.on('exportExcel', (event, arg) => {
+    createNewExcelFile(arg);
+    event.returnValue = true;
+  })
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-    if (!process.env.IS_TEST) win.webContents.openDevTools()
+    //if (!process.env.IS_TEST) win.webContents.openDevTools()
   } else {
     createProtocol('app')
     // Load the index.html when not in development
     win.loadURL('app://./index.html')
+    //win.webContents.openDevTools()
   }
 }
 
@@ -91,4 +129,48 @@ if (isDevelopment) {
       app.quit()
     })
   }
+}
+
+function createNewExcelFile(products) {
+  //console.log('products',products);
+  var Excel = require('exceljs');
+  // A new Excel Work Book
+  var workbook = new Excel.Workbook();
+
+  // Some information about the Excel Work Book.
+  workbook.creator = 'Khalil';
+  workbook.lastModifiedBy = '';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Create a sheet
+  var sheet = workbook.addWorksheet('Sheet1');
+  // A table header
+  sheet.columns = [
+    {
+      header: "Id",
+      key: "id",
+    },
+    { header: "Name", key: "name" },
+    { header: "Line", key: "line" },
+    { header: "Machine No.", key: "machine" },
+    { header: "Part Name", key: "part_name" },
+    { header: "Qty", key: "quantity" },
+    { header: "Category", key: "category" },
+    { header: "Create Date", key: "create_date" },
+  ]
+
+  // Add rows in the above header
+  products.forEach(product => {
+    sheet.addRow(product);
+  })
+
+
+  // Save Excel on Hard Disk
+  let date = Date.now();
+  // Save Excel on Hard Disk
+  workbook.xlsx.writeFile(date+"Excel.xlsx")
+  .then(function() {
+    shell.openPath(date+'Excel.xlsx');
+  });
 }

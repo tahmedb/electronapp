@@ -1,5 +1,5 @@
 <template>
-  <v-layout row data-app>
+  <v-layout wrap data-app>
     <v-flex xs12>
       <v-btn class="primary mr-4" @click="addCategoryDialog = true">
         Add Category
@@ -60,8 +60,8 @@
 </template>
 
 <script>
-const db = window.require("electron-db");
-
+//const db = window.require("electron-db");
+const { ipcRenderer } = window.require("electron");
 export default {
   name: "Home",
   data: () => ({
@@ -77,38 +77,21 @@ export default {
       },
       { text: "Name", value: "name" },
     ],
-    categories: [
-      {
-        name: "Frozen Yogurt",
-        id: 159,
-      },
-    ],
+    categories: [],
     entityName: "categories",
   }),
   methods: {
-    getAllCategories() {
-      db.getAll(this.entityName, (succ, data) => {
-        this.categories = data || [];
-        console.log("data", data);
-        // succ - boolean, tells if the call is successful
-        // data - array of objects that represents the rows.
-      });
-    },
     saveCategory() {
-      db.insertTableContent(this.entityName, this.formData, (succ, msg) => {
-        // succ - boolean, tells if the call is successful
-        if (succ) {
-          this.addCategoryDialog = false;
-          this.getAllCategories();
-          this.formData = {}
-        } else alert(msg);
-        console.log("Success: " + succ);
-        console.log("Message: " + msg);
-      });
+      ipcRenderer.send("saveCategory", this.formData);
+      this.addCategoryDialog = false;
     },
   },
   mounted() {
-    this.getAllCategories();
+    ipcRenderer.on("getCategories", (event, arg) => {
+      this.formData = {};
+      this.categories = arg;
+    });
+    ipcRenderer.send("bringCategories");
   },
   components: {},
 };

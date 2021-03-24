@@ -1,7 +1,7 @@
 <template>
 <v-app>
   <!-- Must have the app property -->
-  <v-app-bar app>
+  <v-app-bar class="primary" app>
     <div id="nav">
       <router-link to="/">Products</router-link>|
       <router-link to="/categories">Category</router-link> 
