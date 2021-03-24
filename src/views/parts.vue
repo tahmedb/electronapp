@@ -1,33 +1,41 @@
 <template>
   <v-layout wrap data-app>
     <v-flex xs12>
-      <v-btn class="primary mr-4" @click="addCategoryDialog = true">
-        Add Category
+      <v-btn class="primary mr-4" @click="addPartDialog = true">
+        Add Parts Stock
       </v-btn>
     </v-flex>
     <v-flex xs12 class="mt-8">
       <v-data-table
         :headers="headers"
-        :items="categories"
+        :items="parts"
         :items-per-page="5"
         class="elevation-1"
       ></v-data-table>
     </v-flex>
     <v-flex>
       <v-dialog
-        :value="addCategoryDialog"
+        :value="addPartDialog"
         transition="dialog-bottom-transition"
         max-width="600"
       >
         <v-card>
-          <v-toolbar color="primary" dark>Add Category</v-toolbar>
+          <v-toolbar color="primary" dark>Add Part</v-toolbar>
           <v-card-text>
             <v-container>
               <v-row>
                 <v-col cols="12">
                   <v-text-field
                     v-model="formData.name"
-                    label="Category Name*"
+                    label="Part Name*"
+                    required
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="formData.stock"
+                    label="Stock Quantity*"
+                    type="number"
                     required
                   ></v-text-field>
                 </v-col>
@@ -40,7 +48,7 @@
             <v-btn
               color="blue darken-1"
               text
-              @click="addCategoryDialog = false"
+              @click="addPartDialog = false"
             >
               Close
             </v-btn>
@@ -48,7 +56,7 @@
               :disabled="!formData.name"
               color="blue darken-1"
               text
-              @click="saveCategory()"
+              @click="savePart()"
             >
               Save
             </v-btn>
@@ -66,7 +74,7 @@ export default {
   name: "Home",
   data: () => ({
     valid: false,
-    addCategoryDialog: false,
+    addPartDialog: false,
     formData: {},
     headers: [
       {
@@ -76,22 +84,23 @@ export default {
         value: "id",
       },
       { text: "Name", value: "name" },
+      { text: "Stock", value: "stock" },
     ],
-    categories: [],
-    entityName: "categories",
+    parts: [],
+    entityName: "parts",
   }),
   methods: {
-    saveCategory() {
-      ipcRenderer.send("saveCategory", this.formData);
-      this.addCategoryDialog = false;
+    savePart() {
+      ipcRenderer.send("savePart", this.formData);
+      this.addPartDialog = false;
     },
   },
   mounted() {
-    ipcRenderer.on("getCategories", (event, arg) => {
+    ipcRenderer.on("getParts", (event, arg) => {
       this.formData = {};
-      this.categories = arg;
+      this.parts = arg;
     });
-    ipcRenderer.send("bringCategories");
+    ipcRenderer.send("bringParts");
   },
   components: {},
 };

@@ -21,6 +21,12 @@ db.createTable('products', (succ, msg) => {
   console.log("Message: " + msg);
 })
 
+db.createTable('parts', (succ, msg) => {
+  // succ - boolean, tells if the call is successful
+  console.log("Success: " + succ);
+  console.log("Message: " + msg);
+})
+
 
 async function createWindow() {
   // Create the browser window.
@@ -53,6 +59,7 @@ async function createWindow() {
       event.returnValue = true;
     });
   })
+
   ipcMain.on('bringCategories', (event, arg) => {
     db.getAll("categories", (succ, data) => {
       event.reply('getCategories', data)
@@ -64,6 +71,23 @@ async function createWindow() {
       if (succ) {
         db.getAll("categories", (succ, data) => {
           event.reply('getCategories', data)
+        });
+      }
+      event.returnValue = true;
+    });
+  })
+
+  ipcMain.on('bringParts', (event, arg) => {
+    db.getAll("parts", (succ, data) => {
+      event.reply('getParts', data)
+    });
+  })
+
+  ipcMain.on('savePart', (event, arg) => {
+    db.insertTableContent("parts", arg, (succ, msg) => {
+      if (succ) {
+        db.getAll("parts", (succ, data) => {
+          event.reply('getParts', data)
         });
       }
       event.returnValue = true;

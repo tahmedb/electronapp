@@ -1,5 +1,6 @@
 {
   "name": "vue-electron-app",
+  "productName": "Inventory Management System",
   "version": "0.1.0",
   "private": true,
   "scripts": {

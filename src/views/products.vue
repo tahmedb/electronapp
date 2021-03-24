@@ -2,13 +2,13 @@
   <v-layout wrap data-app>
     <v-flex xs12>
       <v-btn class="primary mr-4" @click="addProductDialog = true">
-        Add Product
+        Issuance Form
       </v-btn>
       <v-btn class="success mr-4" @click="exportToExcel">
         Exprt To Excel
       </v-btn>
     </v-flex>
-    <v-flex xs12>
+    <v-flex xs12 class="mt-8">
       <v-card>
         <v-card-title>
           <v-flex xs6>
@@ -27,6 +27,7 @@
                   label="Date From"
                   prepend-icon="mdi-calendar"
                   readonly
+                  clearable
                   v-bind="attrs"
                   v-on="on"
                 ></v-text-field>
@@ -105,11 +106,11 @@
                   ></v-text-field>
                 </v-col>
                 <v-col cols="6">
-                  <v-text-field
+                  <v-select
                     v-model="formData.part_name"
-                    label="Part Name*"
-                    required
-                  ></v-text-field>
+                    :items="parts"
+                    label="Part Name"
+                  ></v-select>
                 </v-col>
                 <v-col cols="12">
                   <v-text-field
@@ -154,7 +155,7 @@ export default {
     search: "",
     valid: false,
     addProductDialog: false,
-    selectedProducts:[],
+    selectedProducts: [],
     formData: { name: "", line: "", machine: "", part_name: "", quantity: 0 },
     headers: [
       {
@@ -173,14 +174,26 @@ export default {
     ],
     products: [],
     categories: [],
+    parts: [],
     entityName: "products",
   }),
   methods: {
-    getFiltered(e){
+    join(t, a, s) {
+      function format(m) {
+        let f = new Intl.DateTimeFormat("en", m);
+        if (m.month) return f.format(t) <10?'0'+f.format(t):f.format(t);
+        return f.format(t);
+      }
+      return a.map(format).join(s);
+    },
+    getFiltered(e) {
       this.selectedProducts = e;
     },
-    exportToExcel(){
-       ipcRenderer.send("exportExcel",this.selectedProducts.length>0?this.selectedProducts:this.products);
+    exportToExcel() {
+      ipcRenderer.send(
+        "exportExcel",
+        this.selectedProducts.length > 0 ? this.selectedProducts : this.products
+      );
     },
     saveProduct() {
       this.formData.create_date = new Date();
@@ -196,6 +209,11 @@ export default {
     },
   },
   mounted() {
+    this.from_date = this.join(
+      new Date(),
+      [{ year: "numeric" }, { month: "numeric" }, { day: "numeric" }],
+      "-"
+    );
     ipcRenderer.on("getCategories", (event, arg) => {
       this.categories = arg.map((x) => x.name);
     });
@@ -203,6 +221,10 @@ export default {
       this.formData = {};
       this.products = arg || [];
     });
+    ipcRenderer.on("getParts", (event, arg) => {
+      this.parts = arg.map((x) => x.name);
+    });
+    ipcRenderer.send("bringParts");
     ipcRenderer.send("bringCategories");
     ipcRenderer.send("bringProducts");
   },
