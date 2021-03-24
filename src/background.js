@@ -157,20 +157,27 @@ function updatePart(part, event) {
   };
   let set = {
     'name': part.name,
-    'stock': part.stock,
+    'stock': parseInt(part.stock) + parseInt(part.update_stock),
     'last_modified': new Date()
   }
   db.updateRow('parts', where, set, (succ, msg) => {
     console.log("stock update: " + succ);
     if (succ) {
+      console.log('succ', succ)
       //maintain part history
-      db.insertTableContent("partsHistory", {...part,part_id:part.id,create_date:new Date()}, (succ, msg) => {
-        console.log('history added', succ);
-      });
-     //send update parts to renderer
-      db.getAll("parts", (succ, data) => {
-        event.reply('getParts', data)
-      });
+      setTimeout(() => {
+        db.insertTableContent("partsHistory", { ...part, stock: part.update_stock, part_id: part.id, create_date: new Date() }, (succ, msg) => {
+          console.log('history added', succ);
+        });
+      }, 20);
+
+      //send update parts to renderer
+      setTimeout(() => {
+        db.getAll("parts", (succ, data) => {
+          console.log('fetch parts');
+          event.reply('getParts', data)
+        });
+      }, 40);
     }
   });
 }
@@ -249,7 +256,7 @@ ipcMain.on('updatePart', (event, arg) => {
 })
 
 ipcMain.on('bringPartsHistory', (event, arg) => {
-  db.getRows("partsHistory",{part_id:arg}, (succ, data) => {
+  db.getRows("partsHistory", { part_id: arg }, (succ, data) => {
     event.reply('getPartsHistory', data)
   });
 })

@@ -29,7 +29,7 @@
         max-width="600"
       >
         <v-card>
-          <v-toolbar color="primary" dark>Add Part</v-toolbar>
+          <v-toolbar color="primary" dark>{{formData.id ? "Update":"Add"}} Part</v-toolbar>
           <v-card-text>
             <v-container>
               <v-row>
@@ -41,7 +41,15 @@
                     required
                   ></v-text-field>
                 </v-col>
-                <v-col cols="12">
+                <v-col cols="12" v-if="formData.id">
+                  <v-text-field
+                    v-model="formData.update_stock"
+                    label="Update Stock Quantity*"
+                    type="number"
+                    required
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" v-else>
                   <v-text-field
                     v-model="formData.stock"
                     label="Stock Quantity*"
@@ -59,7 +67,7 @@
               Close
             </v-btn>
             <v-btn
-              :disabled="!formData.name"
+              :disabled="formData.id? formData.update_stock==0:!formData.name"
               color="blue darken-1"
               text
               @click="savePart()"
