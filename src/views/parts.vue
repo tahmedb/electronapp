@@ -11,7 +11,16 @@
         :items="parts"
         :items-per-page="5"
         class="elevation-1"
-      ></v-data-table>
+      >
+        <template v-slot:item.actions="{ item }">
+          <v-btn icon @click="updateStock(item)">
+            <v-icon small class="mr-2"> mdi-pencil </v-icon>
+          </v-btn>
+          <v-btn icon @click="getPartHistory(item)">
+            <v-icon small class="mr-2"> mdi-history </v-icon>
+          </v-btn>
+        </template>
+      </v-data-table>
     </v-flex>
     <v-flex>
       <v-dialog
@@ -28,6 +37,7 @@
                   <v-text-field
                     v-model="formData.name"
                     label="Part Name*"
+                    :disabled="!!formData.id"
                     required
                   ></v-text-field>
                 </v-col>
@@ -45,11 +55,7 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="addPartDialog = false"
-            >
+            <v-btn color="blue darken-1" text @click="addPartDialog = false">
               Close
             </v-btn>
             <v-btn
@@ -58,7 +64,47 @@
               text
               @click="savePart()"
             >
-              Save
+              {{ formData.id ? "Update" : "Save" }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog
+        :value="partHistoryDialog"
+        transition="dialog-bottom-transition"
+        max-width="600"
+      >
+        <v-card>
+          <v-toolbar color="primary" dark>Part History</v-toolbar>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <v-data-table
+                    :headers="history_headers"
+                    :items="history_parts"
+                    :items-per-page="5"
+                    class="elevation-1"
+                  >
+                    <template v-slot:item.create_date="{ item }">
+                      <span>{{
+                        new Date(item.create_date).toLocaleString()
+                      }}</span>
+                    </template>
+                  </v-data-table>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="partHistoryDialog = false"
+            >
+              Close
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -73,6 +119,21 @@ const { ipcRenderer } = window.require("electron");
 export default {
   name: "Home",
   data: () => ({
+    //part history
+    partHistoryDialog: false,
+    history_headers: [
+      {
+        text: "Id",
+        align: "start",
+        sortable: false,
+        value: "id",
+      },
+      { text: "Name", value: "name" },
+      { text: "Stock", value: "stock" },
+      { text: "Date Added", value: "create_date" },
+    ],
+    history_parts: [],
+    //
     valid: false,
     addPartDialog: false,
     formData: {},
@@ -85,13 +146,27 @@ export default {
       },
       { text: "Name", value: "name" },
       { text: "Stock", value: "stock" },
+      { text: "Actions", value: "actions", sortable: false },
     ],
     parts: [],
     entityName: "parts",
   }),
   methods: {
+    getPartHistory(item) {
+      this.partHistoryDialog = true;
+      this.formData = item;
+      ipcRenderer.send("bringPartsHistory", item.id);
+    },
+    updateStock(item) {
+      this.addPartDialog = true;
+      this.formData = item;
+    },
     savePart() {
-      ipcRenderer.send("savePart", this.formData);
+      if (this.formData.id) {
+        ipcRenderer.send("updatePart", this.formData);
+      } else {
+        ipcRenderer.send("savePart", this.formData);
+      }
       this.addPartDialog = false;
     },
   },
@@ -99,6 +174,9 @@ export default {
     ipcRenderer.on("getParts", (event, arg) => {
       this.formData = {};
       this.parts = arg;
+    });
+    ipcRenderer.on("getPartsHistory", (event, arg) => {
+      this.history_parts = arg;
     });
     ipcRenderer.send("bringParts");
   },

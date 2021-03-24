@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, ipcMain ,shell} from 'electron'
+import { app, protocol, BrowserWindow, ipcMain, shell } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -27,6 +27,12 @@ db.createTable('parts', (succ, msg) => {
   console.log("Message: " + msg);
 })
 
+db.createTable('partsHistory', (succ, msg) => {
+  // succ - boolean, tells if the call is successful
+  console.log("Success: " + succ);
+  console.log("Message: " + msg);
+})
+
 
 async function createWindow() {
   // Create the browser window.
@@ -43,61 +49,7 @@ async function createWindow() {
     }
   })
   win.setMenuBarVisibility(false);
-  ipcMain.on('bringProducts', (event, arg) => {
-    db.getAll("products", (succ, data) => {
-      event.reply('getProducts', data)
-    });
-  })
 
-  ipcMain.on('saveProducts', (event, arg) => {
-    db.insertTableContent("products", arg, (succ, msg) => {
-      if (succ) {
-        db.getAll("products", (succ, data) => {
-          event.reply('getProducts', data)
-        });
-      }
-      event.returnValue = true;
-    });
-  })
-
-  ipcMain.on('bringCategories', (event, arg) => {
-    db.getAll("categories", (succ, data) => {
-      event.reply('getCategories', data)
-    });
-  })
-
-  ipcMain.on('saveCategory', (event, arg) => {
-    db.insertTableContent("categories", arg, (succ, msg) => {
-      if (succ) {
-        db.getAll("categories", (succ, data) => {
-          event.reply('getCategories', data)
-        });
-      }
-      event.returnValue = true;
-    });
-  })
-
-  ipcMain.on('bringParts', (event, arg) => {
-    db.getAll("parts", (succ, data) => {
-      event.reply('getParts', data)
-    });
-  })
-
-  ipcMain.on('savePart', (event, arg) => {
-    db.insertTableContent("parts", arg, (succ, msg) => {
-      if (succ) {
-        db.getAll("parts", (succ, data) => {
-          event.reply('getParts', data)
-        });
-      }
-      event.returnValue = true;
-    });
-  })
-
-  ipcMain.on('exportExcel', (event, arg) => {
-    createNewExcelFile(arg);
-    event.returnValue = true;
-  })
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
@@ -193,8 +145,118 @@ function createNewExcelFile(products) {
   // Save Excel on Hard Disk
   let date = Date.now();
   // Save Excel on Hard Disk
-  workbook.xlsx.writeFile(date+"Excel.xlsx")
-  .then(function() {
-    shell.openPath(date+'Excel.xlsx');
+  workbook.xlsx.writeFile(date + "Excel.xlsx")
+    .then(function () {
+      shell.openPath(date + 'Excel.xlsx');
+    });
+}
+
+function updatePart(part, event) {
+  let where = {
+    "id": part.id
+  };
+  let set = {
+    'name': part.name,
+    'stock': part.stock,
+    'last_modified': new Date()
+  }
+  db.updateRow('parts', where, set, (succ, msg) => {
+    console.log("stock update: " + succ);
+    if (succ) {
+      //maintain part history
+      db.insertTableContent("partsHistory", {...part,part_id:part.id,create_date:new Date()}, (succ, msg) => {
+        console.log('history added', succ);
+      });
+     //send update parts to renderer
+      db.getAll("parts", (succ, data) => {
+        event.reply('getParts', data)
+      });
+    }
   });
 }
+function deductParts(part, qty) {
+  db.getRows('parts', {
+    name: part
+  }, (succ, result) => {
+    let stock = result[0].stock;
+    let where = {
+      "name": part
+    };
+
+    let set = {
+      "stock": stock - qty
+    }
+    db.updateRow('parts', where, set, (succ, msg) => {
+      console.log("stock update: " + succ);
+    });
+  })
+
+}
+
+ipcMain.on('bringProducts', (event, arg) => {
+  db.getAll("products", (succ, data) => {
+    event.reply('getProducts', data)
+  });
+})
+
+ipcMain.on('saveProducts', (event, arg) => {
+  db.insertTableContent("products", arg, (succ, msg) => {
+    if (succ) {
+      deductParts(arg.part_name, arg.quantity)
+      db.getAll("products", (succ, data) => {
+        event.reply('getProducts', data)
+      });
+    }
+    event.returnValue = true;
+  });
+})
+
+ipcMain.on('bringCategories', (event, arg) => {
+  db.getAll("categories", (succ, data) => {
+    event.reply('getCategories', data)
+  });
+})
+
+ipcMain.on('saveCategory', (event, arg) => {
+  db.insertTableContent("categories", arg, (succ, msg) => {
+    if (succ) {
+      db.getAll("categories", (succ, data) => {
+        event.reply('getCategories', data)
+      });
+    }
+    event.returnValue = true;
+  });
+})
+
+ipcMain.on('bringParts', (event, arg) => {
+  db.getAll("parts", (succ, data) => {
+    event.reply('getParts', data)
+  });
+})
+
+ipcMain.on('savePart', (event, arg) => {
+  db.insertTableContent("parts", arg, (succ, msg) => {
+    if (succ) {
+      db.getAll("parts", (succ, data) => {
+        event.reply('getParts', data)
+      });
+    }
+    event.returnValue = true;
+  });
+})
+ipcMain.on('updatePart', (event, arg) => {
+  updatePart(arg, event);
+})
+
+ipcMain.on('bringPartsHistory', (event, arg) => {
+  db.getRows("partsHistory",{part_id:arg}, (succ, data) => {
+    event.reply('getPartsHistory', data)
+  });
+})
+
+
+
+ipcMain.on('exportExcel', (event, arg) => {
+  createNewExcelFile(arg);
+  event.returnValue = true;
+})
