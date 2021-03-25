@@ -5,7 +5,7 @@
         Issuance Form
       </v-btn>
       <v-btn class="success mr-4" @click="exportToExcel">
-        Exprt To Excel
+        Export To Excel
       </v-btn>
     </v-flex>
     <v-flex xs12 class="mt-8">
@@ -73,7 +73,7 @@
         max-width="600"
       >
         <v-card>
-          <v-toolbar color="primary" dark>Add Product</v-toolbar>
+          <v-toolbar color="primary" dark>Issue</v-toolbar>
           <v-card-text>
             <v-container>
               <v-row>
@@ -87,7 +87,7 @@
                 <v-col cols="12">
                   <v-text-field
                     v-model="formData.name"
-                    label="Product Name*"
+                    label="Reciever Name*"
                     required
                   ></v-text-field>
                 </v-col>
@@ -106,11 +106,11 @@
                   ></v-text-field>
                 </v-col>
                 <v-col cols="6">
-                  <v-select
+                  <v-autocomplete
                     v-model="formData.part_name"
                     :items="parts"
                     label="Part Name"
-                  ></v-select>
+                  ></v-autocomplete>
                 </v-col>
                 <v-col cols="12">
                   <v-text-field

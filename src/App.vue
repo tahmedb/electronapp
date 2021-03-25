@@ -2,7 +2,7 @@
 <v-app>
   <!-- Must have the app property -->
   <v-app-bar class="primary" app>
-     <img height="50" width="50" src="./assets/logo2.jpg">
+     <img height="50" width="50" src="./assets/logo2.jpeg">
     <div id="nav">
       <router-link to="/">Issuance Form</router-link>|
       <router-link to="/categories">Category</router-link> |

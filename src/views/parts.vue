@@ -4,14 +4,28 @@
       <v-btn class="primary mr-4" @click="addPartDialog = true">
         Add Parts Stock
       </v-btn>
+      <v-btn class="success mr-4" @click="exportToExcel">
+        Export To Excel
+      </v-btn>
+    </v-flex>
+    <v-flex xs12>
+      <v-text-field
+        v-model="search"
+        append-icon="mdi-magnify"
+        label="Search"
+      ></v-text-field>
     </v-flex>
     <v-flex xs12 class="mt-8">
       <v-data-table
         :headers="headers"
         :items="parts"
         :items-per-page="5"
+        :search="search"
         class="elevation-1"
       >
+        <template v-slot:item.create_date="{ item }">
+          <span>{{ new Date(item.create_date).toLocaleString() }}</span>
+        </template>
         <template v-slot:item.actions="{ item }">
           <v-btn icon @click="updateStock(item)">
             <v-icon small class="mr-2"> mdi-pencil </v-icon>
@@ -29,7 +43,9 @@
         max-width="600"
       >
         <v-card>
-          <v-toolbar color="primary" dark>{{formData.id ? "Update":"Add"}} Part</v-toolbar>
+          <v-toolbar color="primary" dark
+            >{{ formData.id ? "Update" : "Add" }} Part</v-toolbar
+          >
           <v-card-text>
             <v-container>
               <v-row>
@@ -57,6 +73,14 @@
                     required
                   ></v-text-field>
                 </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="formData.gate_pass"
+                    label="Gate Pass Number*"
+                    type="text"
+                    required
+                  ></v-text-field>
+                </v-col>
               </v-row>
             </v-container>
             <small>*indicates required field</small>
@@ -67,7 +91,9 @@
               Close
             </v-btn>
             <v-btn
-              :disabled="formData.id? formData.update_stock==0:!formData.name"
+              :disabled="
+                formData.id ? formData.update_stock == 0 : !formData.name
+              "
               color="blue darken-1"
               text
               @click="savePart()"
@@ -154,12 +180,16 @@ export default {
       },
       { text: "Name", value: "name" },
       { text: "Stock", value: "stock" },
+      { text: "Get Pass Number", value: "gate_pass" },
+      { text: "Date Added", value: "create_date" },
       { text: "Actions", value: "actions", sortable: false },
     ],
     parts: [],
     entityName: "parts",
+    search: null,
   }),
   methods: {
+    exportToExcel(){},
     getPartHistory(item) {
       this.partHistoryDialog = true;
       this.formData = item;
@@ -173,6 +203,7 @@ export default {
       if (this.formData.id) {
         ipcRenderer.send("updatePart", this.formData);
       } else {
+        this.formData.create_date = new Date();
         ipcRenderer.send("savePart", this.formData);
       }
       this.addPartDialog = false;
