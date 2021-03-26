@@ -107,7 +107,7 @@ if (isDevelopment) {
   }
 }
 
-function createNewExcelFile(products) {
+function createNewExcelFile(sheetColumns,products) {
   //console.log('products',products);
   var Excel = require('exceljs');
   // A new Excel Work Book
@@ -122,20 +122,10 @@ function createNewExcelFile(products) {
   // Create a sheet
   var sheet = workbook.addWorksheet('Sheet1');
   // A table header
-  sheet.columns = [
-    {
-      header: "Id",
-      key: "id",
-    },
-    { header: "Name", key: "name" },
-    { header: "Line", key: "line" },
-    { header: "Machine No.", key: "machine" },
-    { header: "Part Name", key: "part_name" },
-    { header: "Qty", key: "quantity" },
-    { header: "Category", key: "category" },
-    { header: "Create Date", key: "create_date" },
-  ]
-
+  sheet.columns =sheetColumns;
+  sheet.columns.forEach(column => {
+    column.width = column.header.length < 12 ? 12 : column.header.length
+  })
   // Add rows in the above header
   products.forEach(product => {
     sheet.addRow(product);
@@ -264,6 +254,33 @@ ipcMain.on('bringPartsHistory', (event, arg) => {
 
 
 ipcMain.on('exportExcel', (event, arg) => {
-  createNewExcelFile(arg);
+  let columns= [
+    {
+      header: "Id",
+      key: "id",
+    },
+    { header: "Name", key: "name" },
+    { header: "Line", key: "line" },
+    { header: "Machine No.", key: "machine" },
+    { header: "Part Name", key: "part_name" },
+    { header: "Qty", key: "quantity" },
+    { header: "Category", key: "category" },
+    { header: "Create Date", key: "create_date" },
+  ];
+  createNewExcelFile(columns,arg);
+  event.returnValue = true;
+})
+ipcMain.on('exportPartsExcel', (event, arg) => {
+  let columns= [
+    {
+      header: "Id",
+      key: "id",
+    },
+    { header: "Name", key: "name" },
+      { header: "Stock", key: "stock" },
+      { header: "Gate Pass Number", key: "gate_pass" },
+      { header: "Date Added", key: "create_date" },
+  ];
+  createNewExcelFile(columns,arg);
   event.returnValue = true;
 })

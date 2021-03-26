@@ -21,6 +21,7 @@
         :items="parts"
         :items-per-page="5"
         :search="search"
+         @current-items="getFiltered"
         class="elevation-1"
       >
         <template v-slot:item.create_date="{ item }">
@@ -180,16 +181,22 @@ export default {
       },
       { text: "Name", value: "name" },
       { text: "Stock", value: "stock" },
-      { text: "Get Pass Number", value: "gate_pass" },
+      { text: "Gate Pass Number", value: "gate_pass" },
       { text: "Date Added", value: "create_date" },
       { text: "Actions", value: "actions", sortable: false },
     ],
     parts: [],
+    selectedParts:[],
     entityName: "parts",
     search: null,
   }),
   methods: {
-    exportToExcel(){},
+    getFiltered(e) {
+      this.selectedParts = e;
+    },
+    exportToExcel(){
+      ipcRenderer.send('exportPartsExcel',this.selectedParts.length > 0 ? this.selectedParts : this.parts);
+    },
     getPartHistory(item) {
       this.partHistoryDialog = true;
       this.formData = item;
