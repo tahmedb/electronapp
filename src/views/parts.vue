@@ -21,7 +21,7 @@
         :items="parts"
         :items-per-page="5"
         :search="search"
-         @current-items="getFiltered"
+        @current-items="getFiltered"
         class="elevation-1"
       >
         <template v-slot:item.create_date="{ item }">
@@ -48,42 +48,56 @@
             >{{ formData.id ? "Update" : "Add" }} Part</v-toolbar
           >
           <v-card-text>
-            <v-container>
-              <v-row>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="formData.name"
-                    label="Part Name*"
-                    :disabled="!!formData.id"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="12" v-if="formData.id">
-                  <v-text-field
-                    v-model="formData.update_stock"
-                    label="Update Stock Quantity*"
-                    type="number"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="12" v-else>
-                  <v-text-field
-                    v-model="formData.stock"
-                    label="Stock Quantity*"
-                    type="number"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="formData.gate_pass"
-                    label="Gate Pass Number*"
-                    type="text"
-                    required
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-            </v-container>
+            <v-form ref="form" v-model="valid">
+              <v-container>
+                <v-row>
+                  <v-col cols="12">
+                    <v-select
+                      :rules="rule"
+                      v-model="formData.category"
+                      :items="categories"
+                      label="Category"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      :rules="rule"
+                      v-model="formData.name"
+                      label="Part Name*"
+                      :disabled="!!formData.id"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" v-if="formData.id">
+                    <v-text-field
+                      :rules="rule"
+                      v-model="formData.update_stock"
+                      label="Update Stock Quantity*"
+                      type="number"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" v-else>
+                    <v-text-field
+                      :rules="rule"
+                      v-model="formData.stock"
+                      label="Stock Quantity*"
+                      type="number"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      :rules="rule"
+                      v-model="formData.gate_pass"
+                      label="Gate Pass Number*"
+                      type="text"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-form>
             <small>*indicates required field</small>
           </v-card-text>
           <v-card-actions>
@@ -92,9 +106,7 @@
               Close
             </v-btn>
             <v-btn
-              :disabled="
-                formData.id ? formData.update_stock == 0 : !formData.name
-              "
+              :disabled="!valid"
               color="blue darken-1"
               text
               @click="savePart()"
@@ -115,6 +127,11 @@
           <v-card-text>
             <v-container>
               <v-row>
+                <v-col cols="12">
+                  <v-btn class="success mr-4" @click="exportHistoryToExcel">
+                    Export To Excel
+                  </v-btn>
+                </v-col>
                 <v-col cols="12">
                   <v-data-table
                     :headers="history_headers"
@@ -151,10 +168,19 @@
 <script>
 //const db = window.require("electron-db");
 const { ipcRenderer } = window.require("electron");
+
+// 1. category parts -done
+// 2. validate form - done
+// 3. export part history#
+// 4. excel file add category column -done
+// 5. formate excel time -done
+
 export default {
   name: "Home",
   data: () => ({
     //part history
+    rule: [(v) => !!v || "Field is required"],
+    categories: [],
     partHistoryDialog: false,
     history_headers: [
       {
@@ -165,6 +191,7 @@ export default {
       },
       { text: "Name", value: "name" },
       { text: "Stock", value: "stock" },
+      { text: "Gate Pass", value: "gate_pass" },
       { text: "Date Added", value: "create_date" },
     ],
     history_parts: [],
@@ -181,21 +208,31 @@ export default {
       },
       { text: "Name", value: "name" },
       { text: "Stock", value: "stock" },
+      { text: "Category", value: "category" },
       { text: "Gate Pass Number", value: "gate_pass" },
       { text: "Date Added", value: "create_date" },
       { text: "Actions", value: "actions", sortable: false },
     ],
     parts: [],
-    selectedParts:[],
+    selectedParts: [],
     entityName: "parts",
     search: null,
   }),
   methods: {
+    exportHistoryToExcel(){
+      ipcRenderer.send(
+        "exportPartsHistoryExcel",
+        this.history_parts
+      );
+    },
     getFiltered(e) {
       this.selectedParts = e;
     },
-    exportToExcel(){
-      ipcRenderer.send('exportPartsExcel',this.selectedParts.length > 0 ? this.selectedParts : this.parts);
+    exportToExcel() {
+      ipcRenderer.send(
+        "exportPartsExcel",
+        this.selectedParts.length > 0 ? this.selectedParts : this.parts
+      );
     },
     getPartHistory(item) {
       this.partHistoryDialog = true;
@@ -224,8 +261,24 @@ export default {
     ipcRenderer.on("getPartsHistory", (event, arg) => {
       this.history_parts = arg;
     });
+    ipcRenderer.on("getCategories", (event, arg) => {
+      this.categories = arg.map((x) => x.name);
+    });
+    ipcRenderer.on("partResult", (event, arg) => {
+      if (arg == true) {
+        alert("Part Saved");
+      } else if (arg == false) {
+        alert("Part Already Exist");
+      } else {
+        alert("something went wrong");
+      }
+    });
     ipcRenderer.send("bringParts");
+    ipcRenderer.send("bringCategories");
   },
   components: {},
 };
 </script>
+
+
+

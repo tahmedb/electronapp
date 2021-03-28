@@ -74,63 +74,72 @@
       >
         <v-card>
           <v-toolbar color="primary" dark>Issue</v-toolbar>
-          <v-card-text>
-            <v-container>
-              <v-row>
-                <v-col cols="12">
-                  <v-select
-                    v-model="formData.category"
-                    :items="categories"
-                    label="Category"
-                  ></v-select>
-                </v-col>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="formData.name"
-                    label="Reciever Name*"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="formData.line"
-                    label="Line*"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field
-                    v-model="formData.machine"
-                    label="Machine Name*"
-                    required
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="6">
-                  <v-autocomplete
-                    v-model="formData.part_name"
-                    :items="parts"
-                    label="Part Name"
-                  ></v-autocomplete>
-                </v-col>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="formData.quantity"
-                    label="Quantity *"
-                    type="number"
-                    required
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-            </v-container>
-            <small>*indicates required field</small>
-          </v-card-text>
+          <v-form ref="form" v-model="valid" >
+            <v-card-text>
+              <v-container>
+                <v-row>
+                  <v-col cols="12">
+                    <v-select
+                     :rules="rule"
+                      v-model="formData.category"
+                      :items="categories"
+                      label="Category"
+                      @change="getCategoryParts"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                    :rules="rule"
+                      v-model="formData.name"
+                      label="Reciever Name*"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                    :rules="rule"
+                      v-model="formData.line"
+                      label="Line Number*"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-text-field
+                    :rules="rule"
+                      v-model="formData.machine"
+                      label="Machine Name*"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-autocomplete
+                    :rules="rule"
+                      v-model="formData.part_name"
+                      :items="parts"
+                      label="Part Name"
+                    ></v-autocomplete>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                    :rules="rule"
+                      v-model="formData.quantity"
+                      label="Quantity *"
+                      type="number"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-container>
+              <small>*indicates required field</small>
+            </v-card-text>
+          </v-form>
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="blue darken-1" text @click="addProductDialog = false">
               Close
             </v-btn>
             <v-btn
-              :disabled="!formData.name"
+              :disabled="!valid||!formData.name"
               color="blue darken-1"
               text
               @click="saveProduct()"
@@ -150,6 +159,7 @@ const { ipcRenderer } = window.require("electron");
 export default {
   name: "Home",
   data: () => ({
+    rule:[v => !!v || 'Field is required'],
     menu: false,
     from_date: null,
     search: "",
@@ -178,10 +188,16 @@ export default {
     entityName: "products",
   }),
   methods: {
+    getCategoryParts(category){      
+      ipcRenderer.send(
+        "bringCategoryParts",
+        {category}
+      );
+    },
     join(t, a, s) {
       function format(m) {
         let f = new Intl.DateTimeFormat("en", m);
-        if (m.month) return f.format(t) <10?'0'+f.format(t):f.format(t);
+        if (m.month) return f.format(t) < 10 ? "0" + f.format(t) : f.format(t);
         return f.format(t);
       }
       return a.map(format).join(s);
@@ -221,8 +237,8 @@ export default {
       this.formData = {};
       this.products = arg || [];
     });
-    ipcRenderer.on("getParts", (event, arg) => {
-      this.parts = arg.map((x) => x.name);
+    ipcRenderer.on("getCategoryParts", (event, arg) => {
+      this.parts = (arg||[]).map((x) => x.name);
     });
     ipcRenderer.send("bringParts");
     ipcRenderer.send("bringCategories");

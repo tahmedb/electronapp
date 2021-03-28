@@ -107,7 +107,7 @@ if (isDevelopment) {
   }
 }
 
-function createNewExcelFile(sheetColumns,products) {
+function createNewExcelFile(sheetColumns,products,fileName='excel') {
   //console.log('products',products);
   var Excel = require('exceljs');
   // A new Excel Work Book
@@ -124,10 +124,14 @@ function createNewExcelFile(sheetColumns,products) {
   // A table header
   sheet.columns =sheetColumns;
   sheet.columns.forEach(column => {
-    column.width = column.header.length < 12 ? 12 : column.header.length
+    if(column.key == 'create_date')
+      column.width = 20
+    else
+      column.width = column.header.length < 12 ? 12 : column.header.length
   })
   // Add rows in the above header
   products.forEach(product => {
+    product.create_date =new Date(product.create_date).toLocaleString();
     sheet.addRow(product);
   })
 
@@ -135,9 +139,9 @@ function createNewExcelFile(sheetColumns,products) {
   // Save Excel on Hard Disk
   let date = Date.now();
   // Save Excel on Hard Disk
-  workbook.xlsx.writeFile(date + "Excel.xlsx")
+  workbook.xlsx.writeFile(date + `${fileName}.xlsx`)
     .then(function () {
-      shell.openPath(date + 'Excel.xlsx');
+      shell.openPath(date + `${fileName}.xlsx`);
     });
 }
 
@@ -231,15 +235,32 @@ ipcMain.on('bringParts', (event, arg) => {
   });
 })
 
+ipcMain.on('bringCategoryParts', (event, arg) => {
+  db.getRows('categories', {
+    name: arg.category
+  }, (succ, result) => {
+    event.reply('getCategoryParts',result)
+  })
+})
 ipcMain.on('savePart', (event, arg) => {
-  db.insertTableContent("parts", arg, (succ, msg) => {
-    if (succ) {
-      db.getAll("parts", (succ, data) => {
-        event.reply('getParts', data)
+  db.getRows('parts', {
+    category: arg.category,
+    name: arg.name
+  }, (succ, result) => {
+    // succ - boolean, tells if the call is successful
+    if(result.length == 0){
+      db.insertTableContent("parts", arg, (succ, msg) => {
+        if (succ) {
+          db.getAll("parts", (succ, data) => {
+            event.reply('getParts', data)
+          });
+        }
+        event.reply('partResult', true)
       });
+    }else {
+      event.reply('partResult', false)
     }
-    event.returnValue = true;
-  });
+  })  
 })
 ipcMain.on('updatePart', (event, arg) => {
   updatePart(arg, event);
@@ -267,7 +288,7 @@ ipcMain.on('exportExcel', (event, arg) => {
     { header: "Category", key: "category" },
     { header: "Create Date", key: "create_date" },
   ];
-  createNewExcelFile(columns,arg);
+  createNewExcelFile(columns,arg,'category');
   event.returnValue = true;
 })
 ipcMain.on('exportPartsExcel', (event, arg) => {
@@ -278,9 +299,25 @@ ipcMain.on('exportPartsExcel', (event, arg) => {
     },
     { header: "Name", key: "name" },
       { header: "Stock", key: "stock" },
+      { header: "Category", key: "category" },
       { header: "Gate Pass Number", key: "gate_pass" },
       { header: "Date Added", key: "create_date" },
   ];
-  createNewExcelFile(columns,arg);
+  createNewExcelFile(columns,arg,'parts');
+  event.returnValue = true;
+})
+ipcMain.on('exportPartsHistoryExcel', (event, arg) => {
+  let columns= [
+    {
+      header: "Id",
+      key: "id",
+    },
+    { header: "Name", key: "name" },
+      { header: "Stock", key: "stock" },
+      //{ header: "Category", key: "category" },
+      { header: "Gate Pass Number", key: "gate_pass" },
+      { header: "Date Added", key: "create_date" },
+  ];
+  createNewExcelFile(columns,arg,'partHistory');
   event.returnValue = true;
 })
