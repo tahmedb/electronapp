@@ -236,8 +236,8 @@ ipcMain.on('bringParts', (event, arg) => {
 })
 
 ipcMain.on('bringCategoryParts', (event, arg) => {
-  db.getRows('categories', {
-    name: arg.category
+  db.getRows('parts', {
+    category: arg.category
   }, (succ, result) => {
     event.reply('getCategoryParts',result)
   })
