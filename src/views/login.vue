@@ -1,21 +1,23 @@
 <template>
   <v-container fluid fill-height>
+ 
+    <v-layout align-center justify-center wrap>
       <v-flex xs12>
-            <v-alert class="error" v-if="loginMessage">
-                {{loginMessage}}
-            </v-alert>
-        </v-flex>
-    <v-layout align-center justify-center>
-        
+          <img height="200" width="200" src="../assets/logo2.jpeg" />
+      </v-flex>
+      
       <v-flex xs12 sm8 md4>
         <v-card class="elevation-12">
           <v-toolbar dark color="primary">
             <v-toolbar-title>Login form</v-toolbar-title>
           </v-toolbar>
           <v-card-text>
+                <v-alert class="error" v-if="loginMessage">
+          {{ loginMessage }}
+        </v-alert>
             <v-form v-model="valid">
               <v-text-field
-              v-model="formData.username"
+                v-model="formData.username"
                 prepend-icon="mdi-account-tie"
                 name="login"
                 :rules="[(v) => !!v || 'User Name is required']"
@@ -23,7 +25,7 @@
                 type="text"
               ></v-text-field>
               <v-text-field
-              v-model="formData.password"
+                v-model="formData.password"
                 id="password"
                 prepend-icon="mdi-lock"
                 name="password"
@@ -37,7 +39,7 @@
             <v-spacer></v-spacer>
             <v-btn :disabled="!valid" @click="login()" color="primary"
               >Login
-              </v-btn>
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-flex>
