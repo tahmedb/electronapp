@@ -2,9 +2,7 @@
   <v-container fluid fill-height>
  
     <v-layout align-center justify-center wrap>
-      <v-flex xs12>
-          <img height="200" width="200" src="../assets/logo2.jpeg" />
-      </v-flex>
+    
       
       <v-flex xs12 sm8 md4>
         <v-card class="elevation-12">
@@ -42,6 +40,9 @@
             </v-btn>
           </v-card-actions>
         </v-card>
+      </v-flex>
+        <v-flex xs12>
+          <img height="200" width="200" src="../assets/logo2.jpeg" />
       </v-flex>
     </v-layout>
   </v-container>
