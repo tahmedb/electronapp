@@ -1,7 +1,7 @@
 const db = require('electron-db');
 import {  ipcMain } from 'electron'
 
-const entity = entity;
+const entity = 'parts';
 
 
 

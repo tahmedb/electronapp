@@ -19,7 +19,7 @@
       <v-data-table
         :headers="headers"
         :items="parts"
-        :items-per-page="5"
+        :items-per-page="15"
         :search="search"
         @current-items="getFiltered"
         class="elevation-1"
@@ -203,7 +203,6 @@ export default {
       {
         text: "Id",
         align: "start",
-        sortable: false,
         value: "id",
       },
       { text: "Name", value: "name" },
@@ -256,7 +255,7 @@ export default {
   mounted() {
     ipcRenderer.on("getParts", (event, arg) => {
       this.formData = {};
-      this.parts = arg;
+      this.parts = arg.sort((a,b)=>b.id-a.id);
     });
     ipcRenderer.on("getPartsHistory", (event, arg) => {
       this.history_parts = arg;
@@ -275,7 +274,7 @@ export default {
     });
     ipcRenderer.send("bringParts");
     ipcRenderer.send("bringCategories");
-  },
+  }, 
   components: {},
 };
 </script>

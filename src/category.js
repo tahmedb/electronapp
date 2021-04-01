@@ -10,11 +10,15 @@ ipcMain.on('bringCategories', (event, arg) => {
   })
   
   ipcMain.on('saveCategory', (event, arg) => {
+    console.log(arg)
     db.insertTableContent(entity, arg, (succ, msg) => {
+      console.log('mss',msg)
       if (succ) {
         db.getAll(entity, (succ, data) => {
           event.reply('getCategories', data)
         });
+      }else{
+        console.error('error saving category')
       }
       event.returnValue = true;
     });

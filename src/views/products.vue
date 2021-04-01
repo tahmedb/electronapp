@@ -54,7 +54,7 @@
         <v-data-table
           :headers="headers"
           :items="finalProducts"
-          :items-per-page="5"
+          :items-per-page="15"
           :search="search"
           group-by="category"
           class="elevation-1"
@@ -198,6 +198,7 @@ export default {
       function format(m) {
         let f = new Intl.DateTimeFormat("en", m);
         if (m.month) return f.format(t) < 10 ? "0" + f.format(t) : f.format(t);
+        if (m.day) return f.format(t) < 10 ? "0" + f.format(t) : f.format(t);
         return f.format(t);
       }
       return a.map(format).join(s);
@@ -235,7 +236,7 @@ export default {
     });
     ipcRenderer.on("getProducts", (event, arg) => {
       this.formData = {};
-      this.products = arg || [];
+      this.products = arg.sort((a,b)=>b.id-a.id);
     });
     ipcRenderer.on("getCategoryParts", (event, arg) => {
       this.parts = (arg||[]).map((x) => x.name);

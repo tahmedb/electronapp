@@ -5,6 +5,7 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import './users'
 import './category'
+import './parts'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const db = require('electron-db');

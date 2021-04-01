@@ -9,7 +9,7 @@
       <v-data-table
         :headers="headers"
         :items="categories"
-        :items-per-page="5"
+        :items-per-page="15"
         class="elevation-1"
       ></v-data-table>
     </v-flex>
@@ -89,7 +89,7 @@ export default {
   mounted() {
     ipcRenderer.on("getCategories", (event, arg) => {
       this.formData = {};
-      this.categories = arg;
+      this.categories = arg.sort((a,b)=>b.id-a.id);
     });
     ipcRenderer.send("bringCategories");
   },
