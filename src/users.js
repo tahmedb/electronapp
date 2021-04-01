@@ -4,6 +4,11 @@ import {  ipcMain } from 'electron'
 const entity = 'users';
 db.createTable(entity, (succ, msg) => {
     // succ - boolean, tells if the call is successful
+    if(succ){
+        db.insertTableContent(entity, {name:'khalil',password:'passpass'}, (succ, msg) => {
+           
+          }); 
+    }
     console.log("Success: " + succ);
     console.log("Message: " + msg);
   })

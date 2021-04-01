@@ -58,6 +58,7 @@ export default {
   mounted() {
     localStorage.removeItem("user");
     ipcRenderer.on("authentication_event", (event, arg) => {
+      //console.log(arg);
       if (arg.length > 0) {
          localStorage.setItem("user",arg[0].name);
         this.$router.push({
