@@ -4,6 +4,7 @@ import Products from '../views/products.vue'
 import Category from '../views/categories.vue'
 import Part from '../views/parts.vue'
 import Login from '../views/login.vue'
+import Users from '../views/users.vue'
 
 Vue.use(VueRouter)
 
@@ -28,6 +29,14 @@ const routes = [
     path: '/parts',
     name: 'part',
     component: Part,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/users',
+    name: 'user',
+    component: Users,
     meta: {
       requiresAuth: true
     }

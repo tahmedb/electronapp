@@ -3,6 +3,9 @@
 import { app, protocol, BrowserWindow, ipcMain, shell } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+import './users'
+import './category'
+
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const db = require('electron-db');
 // Scheme must be registered before the app is ready
@@ -145,55 +148,6 @@ function createNewExcelFile(sheetColumns,products,fileName='excel') {
     });
 }
 
-function updatePart(part, event) {
-  let where = {
-    "id": part.id
-  };
-  let set = {
-    'name': part.name,
-    'stock': parseInt(part.stock) + parseInt(part.update_stock),
-    'last_modified': new Date()
-  }
-  db.updateRow('parts', where, set, (succ, msg) => {
-    console.log("stock update: " + succ);
-    if (succ) {
-      console.log('succ', succ)
-      //maintain part history
-      setTimeout(() => {
-        db.insertTableContent("partsHistory", { ...part, stock: part.update_stock, part_id: part.id, create_date: new Date() }, (succ, msg) => {
-          console.log('history added', succ);
-        });
-      }, 20);
-
-      //send update parts to renderer
-      setTimeout(() => {
-        db.getAll("parts", (succ, data) => {
-          console.log('fetch parts');
-          event.reply('getParts', data)
-        });
-      }, 40);
-    }
-  });
-}
-function deductParts(part, qty) {
-  db.getRows('parts', {
-    name: part
-  }, (succ, result) => {
-    let stock = result[0].stock;
-    let where = {
-      "name": part
-    };
-
-    let set = {
-      "stock": stock - qty
-    }
-    db.updateRow('parts', where, set, (succ, msg) => {
-      console.log("stock update: " + succ);
-    });
-  })
-
-}
-
 ipcMain.on('bringProducts', (event, arg) => {
   db.getAll("products", (succ, data) => {
     event.reply('getProducts', data)
@@ -211,67 +165,6 @@ ipcMain.on('saveProducts', (event, arg) => {
     event.returnValue = true;
   });
 })
-
-ipcMain.on('bringCategories', (event, arg) => {
-  db.getAll("categories", (succ, data) => {
-    event.reply('getCategories', data)
-  });
-})
-
-ipcMain.on('saveCategory', (event, arg) => {
-  db.insertTableContent("categories", arg, (succ, msg) => {
-    if (succ) {
-      db.getAll("categories", (succ, data) => {
-        event.reply('getCategories', data)
-      });
-    }
-    event.returnValue = true;
-  });
-})
-
-ipcMain.on('bringParts', (event, arg) => {
-  db.getAll("parts", (succ, data) => {
-    event.reply('getParts', data)
-  });
-})
-
-ipcMain.on('bringCategoryParts', (event, arg) => {
-  db.getRows('parts', {
-    category: arg.category
-  }, (succ, result) => {
-    event.reply('getCategoryParts',result)
-  })
-})
-ipcMain.on('savePart', (event, arg) => {
-  db.getRows('parts', {
-    category: arg.category,
-    name: arg.name
-  }, (succ, result) => {
-    // succ - boolean, tells if the call is successful
-    if(result.length == 0){
-      db.insertTableContent("parts", arg, (succ, msg) => {
-        if (succ) {
-          db.getAll("parts", (succ, data) => {
-            event.reply('getParts', data)
-          });
-        }
-        event.reply('partResult', true)
-      });
-    }else {
-      event.reply('partResult', false)
-    }
-  })  
-})
-ipcMain.on('updatePart', (event, arg) => {
-  updatePart(arg, event);
-})
-
-ipcMain.on('bringPartsHistory', (event, arg) => {
-  db.getRows("partsHistory", { part_id: arg }, (succ, data) => {
-    event.reply('getPartsHistory', data)
-  });
-})
-
 
 
 ipcMain.on('exportExcel', (event, arg) => {
